@@ -6,7 +6,6 @@ servers:
   - url: http://localhost:5000
     description: Servidor Wellness desarrollo
 
-
 components:
   schemas:
       HttpBadRequestResponse:
