@@ -1,0 +1,171 @@
+openapi: '3.0.0'
+info:
+  version: "1.0.0-RC1"
+  title: Python-Wellness
+servers:
+  - url: http://localhost:5000
+    description: Servidor Wellness desarrollo
+
+
+components:
+  schemas:
+      HttpBadRequestResponse:
+        type: object
+        properties:
+          bad_request:
+            type: string
+
+      HttpJWTExpiredOrRevokedResponse:
+        type: object
+        properties:
+          jwt_required:
+            type: string
+
+      HttpJWTInvalidResponse:
+        type: object
+        properties:
+          jwt_invalid:
+            type: string
+
+      HttpObjectNotFoundResponse:
+        type: object
+        properties:
+          not_found:
+            type: string
+
+      HttpInternalServerErrorResponse:
+        type: object
+        properties:
+          server_error:
+            type: string
+
+      SessionAuthFailureResponse:
+        type: object
+        properties:
+          auth_failure:
+            type: string
+
+      WellnessLogin:
+        type: object
+        required:
+          - username
+          - password
+        properties:
+          username:
+            type: string
+          password:
+            type: string
+
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /login:
+    post:
+      tags:
+        - auth
+      summary: Logs in into Wellness app
+      requestBody:
+        description: Wellness User Credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WellnessLogin"
+
+      responses:
+        200:
+          description: The user has been logged in successfully. A new access-token is returned within HTTP Body & Response headers.
+
+        400:
+          description: Bad Request, Error 400. HTTP Request with invalid JSON data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpBadRequestResponse"
+        403:
+          description: Unauthorized. Either username / password credentials are invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionAuthFailureResponse"
+
+        500:
+          description: There was an during the login process. Most likely this will be caused by a problem while trying to connect or query the database.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpInternalServerErrorResponse"
+
+  /logout:
+    delete:
+      security:
+        - jwtAuth: []
+      tags:
+        - auth
+      summary: Log outs from Wellness app
+
+      responses:
+        200:
+          description: The user has been logged out successfully. JWT Access-Token is revoked.
+
+        401:
+          description: JWT Access Token expired or revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpJWTExpiredOrRevokedResponse"
+        403:
+          description: JWT Access Token missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpJWTInvalidResponse"
+        500:
+          description: There was an during the logout process.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpInternalServerErrorResponse"
+
+  /import:
+    post:
+      security:
+        - jwtAuth: []
+      tags:
+        - metrics
+      summary: Import metrics file.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Metrics File Successfully Imported.
+
+        401:
+          description: JWT Access Token expired or revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpJWTExpiredOrRevokedResponse"
+        403:
+          description: JWT Access Token missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpJWTInvalidResponse"
+        500:
+          description: There was an error during the Import process.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpInternalServerErrorResponse"
